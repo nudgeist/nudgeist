@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/cover.png" alt="nudgeist" width="640"></p>
+<p align="center"><a href="https://nudgeist.github.io/"><img src="assets/cover.png" alt="nudgeist" width="100%"></a></p>
 
 # nudgeist
 

@@ -59,7 +59,7 @@ export function scrub(text, root) {
   return s;
 }
 
-export const LEAKS = [/\/(Users|home)\/(?!<)[^\s"'/]+/, /[A-Za-z]:\\Users\\/, /[\w.+-]+@[\w-]+\.[a-z]{2,}/i, /sk-ant-[\w-]+/, /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i];
+export const LEAKS = [/\/(Users|home)\/(?!<)[^\s"'/]+/, /\/var\/folders\//, /\/private\/(tmp|var)\//,/[A-Za-z]:\\Users\\/, /[\w.+-]+@[\w-]+\.[a-z]{2,}/i, /sk-ant-[\w-]+/, /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i];
 export function assertClean(text, what) {
   for (const re of LEAKS) if (re.test(text)) throw new Error(`refusing to write ${what}: it matches ${re}`);
   for (const n of NEEDLES) if (text.includes(n)) throw new Error(`refusing to write ${what}: it contains a local name or path`);

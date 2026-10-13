@@ -2,7 +2,7 @@
 
 # nudgeist
 
-**It suggests. You decide.**
+**A nudge, not a switch.**
 
 Before your message reaches an expensive model, nudgeist asks a fast, low-cost one if the task really needs it and suggests a lighter model for that turn. You decide.
 

@@ -87,7 +87,7 @@ writeFileSync(join(dir, 'summary.md'), md);
 
 const all = readdirSync(dir, { recursive: true, withFileTypes: true })
   .filter((e) => e.isFile() && e.name !== 'SHA256SUMS')
-  .map((e) => relative(dir, join(e.parentPath, e.name)))
+  .map((e) => relative(dir, join((e.parentPath ?? e.path), e.name)))
   .sort();
 writeFileSync(join(dir, 'SHA256SUMS'), all.map((f) => `${createHash('sha256').update(readFileSync(join(dir, f))).digest('hex')}  ${f}`).join('\n') + '\n');
 console.log(md);

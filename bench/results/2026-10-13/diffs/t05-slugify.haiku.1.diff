@@ -8,9 +8,9 @@ diff -ruN -x check before/src/text.js after/src/text.js
 +
 +export function slugify(title) {
 +  return title
++    .toLowerCase()
 +    .normalize('NFD')
 +    .replace(/\p{M}/gu, '')
-+    .toLowerCase()
-+    .replace(/[^\p{L}\p{N}]+/gu, '-')
++    .replace(/[^\p{L}\p{Nd}]+/gu, '-')
 +    .replace(/^-+|-+$/g, '');
 +}

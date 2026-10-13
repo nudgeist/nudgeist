@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { basename, join, relative } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { LEAKS } from '../bench/lib.mjs';
@@ -13,10 +13,10 @@ const RESULTS = fileURLToPath(new URL('../bench/results/', import.meta.url));
 const folders = existsSync(RESULTS) ? readdirSync(RESULTS).map((d) => join(RESULTS, d)) : [];
 
 for (const dir of folders) {
-  test(`bench results ${dir.split('/').pop()}: sealed and anonymous`, () => {
+  test(`bench results ${basename(dir)}: sealed and anonymous`, () => {
     const sums = readFileSync(join(dir, 'SHA256SUMS'), 'utf8').trim().split('\n');
     assert.ok(sums.length > 3);
-    const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile() && e.name !== 'SHA256SUMS').map((e) => relative(dir, join(e.parentPath, e.name)).split('\\').join('/')).sort();
+    const files = readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile() && e.name !== 'SHA256SUMS').map((e) => relative(dir, join((e.parentPath ?? e.path), e.name)).split('\\').join('/')).sort();
     assert.deepEqual(files, sums.map((l) => l.split(/ {2}/)[1]).sort(), 'every file is listed, and only those');
     for (const line of sums) {
       const [hash, file] = line.split(/ {2}/);

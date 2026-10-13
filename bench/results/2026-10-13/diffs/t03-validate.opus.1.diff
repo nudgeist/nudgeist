@@ -3,7 +3,7 @@ diff -ruN -x check before/src/pricing.js after/src/pricing.js
 +++ after/src/pricing.js
 @@ -1,3 +1,9 @@
  export function applyDiscount(amount, percent) {
-+  if (typeof amount !== 'number' || !Number.isFinite(amount)) {
++  if (!Number.isFinite(amount)) {
 +    throw new TypeError(`amount must be a finite number, got ${amount}`);
 +  }
 +  if (!(percent >= 0 && percent <= 100)) {

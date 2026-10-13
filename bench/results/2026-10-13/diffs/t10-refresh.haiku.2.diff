@@ -1,34 +1,31 @@
 diff -ruN -x check before/src/client.js after/src/client.js
 --- before/src/client.js
 +++ after/src/client.js
-@@ -1,15 +1,30 @@
+@@ -1,15 +1,27 @@
  export function createClient({ request, refreshToken }) {
    let token = null;
-+  let inflight = null;
++  let refreshing = null;
  
 -  async function refresh() {
 -    token = await refreshToken();
-+  // Concurrent callers share one refresh. `staleToken` is the token that
-+  // failed; if it has already been replaced, there is nothing to refresh.
-+  function refresh(staleToken) {
-+    if (token !== null && token !== staleToken) return Promise.resolve();
-+    if (!inflight) {
-+      inflight = refreshToken()
-+        .then((t) => {
-+          token = t;
-+        })
-+        .finally(() => {
-+          // Cleared on failure too, so later callers can retry.
-+          inflight = null;
-+        });
++  // `stale` is the token the caller was rejected with. If it's no longer
++  // current, another caller already refreshed, so there is nothing to do.
++  function refresh(stale) {
++    if (token !== stale) return Promise.resolve();
++    if (!refreshing) {
++      refreshing = (async () => {
++        token = await refreshToken();
++      })().finally(() => {
++        refreshing = null;
++      });
 +    }
-+    return inflight;
++    return refreshing;
    }
  
    return async function call(path) {
 -    if (!token) await refresh();
 -    let res = await request(path, token);
-+    if (!token) await refresh(null);
++    if (!token) await refresh(token);
 +    const used = token;
 +    let res = await request(path, used);
      if (res.status === 401) {

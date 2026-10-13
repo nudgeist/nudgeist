@@ -3,7 +3,7 @@ diff -ruN -x check before/src/duration.js after/src/duration.js
 +++ after/src/duration.js
 @@ -1,6 +1,7 @@
 -// Parses durations like "2h" into seconds.
-+// Parses durations like "2h", "45s" or "1h30m" into seconds.
++// Parses durations like "2h", "1h30m", "45s" or "1h2m3s" into seconds.
  export function parseDuration(text) {
 -  const m = /^(\d+)h$/.exec(text.trim());
 -  if (!m) throw new Error(`Bad duration: ${text}`);

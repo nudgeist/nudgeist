@@ -10,7 +10,7 @@ diff -ruN -x check before/src/text.js after/src/text.js
 +  return title
 +    .toLowerCase()
 +    .normalize('NFD')
-+    .replace(/\p{M}/gu, '')
++    .replace(/[̀-ͯ]/g, '')
 +    .replace(/[^\p{L}\p{N}]+/gu, '-')
 +    .replace(/^-+|-+$/g, '');
 +}

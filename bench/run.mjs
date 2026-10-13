@@ -56,7 +56,7 @@ const write = (kind, row) => {
   writeFileSync(join(out, `${kind}.jsonl`), lines[kind].join('\n') + '\n');
 };
 
-const files = (dir) => readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => join(e.parentPath, e.name));
+const files = (dir) => readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => join((e.parentPath ?? e.path), e.name));
 
 function advisorTask(task, i) {
   const ws = workspace(task);

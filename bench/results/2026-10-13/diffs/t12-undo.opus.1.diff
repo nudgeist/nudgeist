@@ -12,13 +12,13 @@ diff -ruN -x check before/src/editor.js after/src/editor.js
    }
  
    insert(pos, str) {
-+    this._record();
-     this.text = this.text.slice(0, pos) + str + this.text.slice(pos);
+-    this.text = this.text.slice(0, pos) + str + this.text.slice(pos);
++    this.#apply(this.text.slice(0, pos) + str + this.text.slice(pos));
    }
  
    delete(pos, len) {
-+    this._record();
-     this.text = this.text.slice(0, pos) + this.text.slice(pos + len);
+-    this.text = this.text.slice(0, pos) + this.text.slice(pos + len);
++    this.#apply(this.text.slice(0, pos) + this.text.slice(pos + len));
 +  }
 +
 +  undo() {
@@ -33,11 +33,13 @@ diff -ruN -x check before/src/editor.js after/src/editor.js
 +    this.text = this.redoStack.pop();
 +  }
 +
-+  // Snapshot the text before an edit so undo restores it exactly,
-+  // even when pos/len fall outside the string and slice() clamps them.
-+  _record() {
++  // Records the current text as an undo step, then applies the edit.
++  // Edits that don't change the text are ignored so they can't create empty undo steps.
++  #apply(next) {
++    if (next === this.text) return;
 +    this.undoStack.push(this.text);
 +    if (this.undoStack.length > MAX_UNDO) this.undoStack.shift();
 +    this.redoStack = [];
++    this.text = next;
    }
  }

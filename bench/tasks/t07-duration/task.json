@@ -1,0 +1,5 @@
+{
+  "id": "t07-duration",
+  "title": "Extend a parser",
+  "prompt": "parseDuration only understands hours. Make it accept any combination of hours, minutes and seconds in that order, like '1h30m', '45s', '2h5s' or '1h2m3s', and keep throwing on anything else."
+}

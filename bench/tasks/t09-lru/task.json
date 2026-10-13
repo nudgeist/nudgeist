@@ -1,0 +1,5 @@
+{
+  "id": "t09-lru",
+  "title": "Find a cache bug",
+  "prompt": "Our LRU cache sometimes evicts an entry we just read. Find and fix the bug."
+}

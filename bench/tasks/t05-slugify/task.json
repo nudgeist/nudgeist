@@ -1,0 +1,5 @@
+{
+  "id": "t05-slugify",
+  "title": "Add a small utility",
+  "prompt": "Add an exported slugify(title) function to src/text.js: lowercase, remove accents (é becomes e), replace every run of characters that are not letters or digits with a single dash, and trim dashes from both ends."
+}

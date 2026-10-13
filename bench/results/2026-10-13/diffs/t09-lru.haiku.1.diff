@@ -1,0 +1,16 @@
+diff -ruN -x check before/src/lru.js after/src/lru.js
+--- before/src/lru.js
++++ after/src/lru.js
+@@ -5,7 +5,11 @@
+   }
+ 
+   get(key) {
+-    return this.map.get(key);
++    if (!this.map.has(key)) return undefined;
++    const value = this.map.get(key);
++    this.map.delete(key);
++    this.map.set(key, value);
++    return value;
+   }
+ 
+   set(key, value) {

@@ -1,0 +1,24 @@
+{
+  "name": "nudgeist",
+  "owner": {
+    "name": "Iván Luna",
+    "url": "https://github.com/imprvhub"
+  },
+  "description": "Before your message reaches an expensive model, nudgeist asks a fast, low-cost one if the task really needs it and suggests a lighter model for that turn. You decide.",
+  "plugins": [
+    {
+      "name": "nudgeist",
+      "source": "./",
+      "description": "Before your message reaches an expensive model, nudgeist asks a fast, low-cost one if the task really needs it and suggests a lighter model for that turn. You decide.",
+      "category": "productivity",
+      "keywords": [
+        "model",
+        "effort",
+        "cost",
+        "hooks",
+        "prompt-cache",
+        "haiku"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+diff -ruN -x check before/src/client.js after/src/client.js
+--- before/src/client.js
++++ after/src/client.js
+@@ -1,15 +1,30 @@
+ export function createClient({ request, refreshToken }) {
+   let token = null;
++  let inFlight = null;
+ 
+-  async function refresh() {
+-    token = await refreshToken();
++  // Concurrent callers share one refresh. The promise is cleared when it
++  // settles, success or failure, so a failed refresh doesn't block later ones.
++  function refresh() {
++    if (!inFlight) {
++      inFlight = Promise.resolve()
++        .then(() => refreshToken())
++        .then((t) => {
++          token = t;
++        })
++        .finally(() => {
++          inFlight = null;
++        });
++    }
++    return inFlight;
+   }
+ 
+   return async function call(path) {
+     if (!token) await refresh();
++    const used = token;
+     let res = await request(path, token);
+     if (res.status === 401) {
+-      await refresh();
++      // Skip the refresh if another caller already replaced the token this request used.
++      if (token === used) await refresh();
+       res = await request(path, token);
+     }
+     return res;

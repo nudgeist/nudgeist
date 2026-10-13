@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "nudgeist",
+  "displayName": "nudgeist",
+  "version": "0.1.0",
+  "description": "Before your message reaches an expensive model, nudgeist asks a fast, low-cost one if the task really needs it and suggests a lighter model for that turn. You decide.",
+  "author": {
+    "name": "Iván Luna",
+    "url": "https://github.com/imprvhub"
+  },
+  "license": "MIT",
+  "keywords": [
+    "model",
+    "effort",
+    "cost",
+    "hooks",
+    "prompt-cache"
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "id": "t06-paginate",
+  "title": "Fix an off-by-one bug",
+  "prompt": "Page 2 of the list shows the last item of page 1 again. Fix paginate."
+}

@@ -1,0 +1,5 @@
+{
+  "id": "t12-undo",
+  "title": "Design a small feature",
+  "prompt": "Add undo() and redo() to Editor. insert and delete must be undoable, a new edit after an undo clears the redo history, undo or redo with nothing to undo or redo does nothing, and keep at most 50 undo steps."
+}

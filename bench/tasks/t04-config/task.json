@@ -1,0 +1,5 @@
+{
+  "id": "t04-config",
+  "title": "Change a default and read an env var",
+  "prompt": "Change the default port from 3000 to 8080, and let the PORT environment variable override it."
+}

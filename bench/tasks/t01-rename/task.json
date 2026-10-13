@@ -1,0 +1,5 @@
+{
+  "id": "t01-rename",
+  "title": "Rename a function",
+  "prompt": "Rename the function getUsr to getUser everywhere in the project."
+}

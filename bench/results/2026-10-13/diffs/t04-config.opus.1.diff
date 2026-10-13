@@ -1,0 +1,8 @@
+diff -ruN -x check before/src/config.js after/src/config.js
+--- before/src/config.js
++++ after/src/config.js
+@@ -1,3 +1,3 @@
+ export function loadConfig(env = process.env) {
+-  return { port: 3000, host: env.HOST || 'localhost' };
++  return { port: Number(env.PORT) || 8080, host: env.HOST || 'localhost' };
+ }

@@ -1,0 +1,12 @@
+diff -ruN -x check before/src/intervals.js after/src/intervals.js
+--- before/src/intervals.js
++++ after/src/intervals.js
+@@ -4,7 +4,7 @@
+   const out = [];
+   for (const [s, e] of sorted) {
+     const last = out[out.length - 1];
+-    if (last && s < last[1]) last[1] = e;
++    if (last && s <= last[1]) last[1] = Math.max(last[1], e);
+     else out.push([s, e]);
+   }
+   return out;

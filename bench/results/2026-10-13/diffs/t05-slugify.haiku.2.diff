@@ -1,0 +1,16 @@
+diff -ruN -x check before/src/text.js after/src/text.js
+--- before/src/text.js
++++ after/src/text.js
+@@ -1,3 +1,12 @@
+ export function titleCase(s) {
+   return s.replace(/\b\w/g, (c) => c.toUpperCase());
+ }
++
++export function slugify(title) {
++  return title
++    .toLowerCase()
++    .normalize('NFD')
++    .replace(/\p{M}/gu, '')
++    .replace(/[^\p{L}\p{N}]+/gu, '-')
++    .replace(/^-+|-+$/g, '');
++}

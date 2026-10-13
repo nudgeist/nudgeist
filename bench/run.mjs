@@ -4,7 +4,7 @@
 // Haiku (twice), Opus (once) and, when the advisor said Sonnet, Sonnet (once),
 // and grade every result with the task's hidden test.
 //
-//   node bench/run.mjs --config-dir ~/.claude-bench [--out bench/results/<date>] [--tasks t01-rename,t02-typo]
+//   node bench/run.mjs --config-dir <logged-in Claude Code config folder> [--out bench/results/<date>] [--tasks t01-rename,t02-typo]
 //
 // --config-dir picks the Claude Code login the runs bill to. Results hold no
 // paths, names, accounts or session ids: see lib.mjs scrub/assertClean.

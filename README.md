@@ -31,7 +31,7 @@ It needs Node.js 18 or later: the hooks run with `node`.
 
 1. **What you're running.** It reads the model and effort of your last turn from the session transcript, so it sees `/model` and `/effort` changes. Before the first turn it uses the model the session started with.
 2. **Whether anything can be saved.** If you're already on a model and effort with nothing cheaper to offer, it does nothing and adds no wait.
-3. **A second opinion.** Haiku reads your message plus a few lines about the session: its title, your last requests, and the files in play with their sizes. It never sees your code. It answers with a model, an effort, a confidence and a reason.
+3. **A second opinion.** Haiku reads your message plus a few lines about the session: its title, your last requests, the end of Claude's last reply, and the files in play with their sizes. It never sees your code. It answers with a model, an effort, a confidence and a reason, and says whether your message starts new work. A yes, an ok or a question about progress continues the work already under way, so it keeps your model and effort.
 4. **Whether switching pays.** A model you haven't used in this session has to read the whole conversation from scratch, while your current model reads it from the prompt cache at a fraction of the price. nudgeist does that arithmetic with list prices and the cache lifetime your session actually uses, and only suggests a model when it at least halves the turn's cost. When it doesn't pay, it may suggest a lower effort instead, which keeps the cache.
 5. **One question, then quiet.** It holds a message once. If you keep your model twice in a row, it stays quiet for the rest of the session.
 

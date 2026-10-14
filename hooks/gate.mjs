@@ -25,9 +25,10 @@ const modelName = (m) => m.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1
 const usd = (v) => `~US$${Number(v.toPrecision(2))}`;
 
 // The suggestion for this verdict, or null. Model first (it saves the most),
-// effort when a model switch doesn't pay or isn't needed.
+// effort when a model switch doesn't pay or isn't needed. A message that
+// continues work already under way keeps the session's model and effort.
 export function decide({ verdict, current, turn, now }) {
-  if (!verdict || verdict.confidence < MIN_CONFIDENCE) return null;
+  if (!verdict || verdict.kind !== 'new' || verdict.confidence < MIN_CONFIDENCE) return null;
   const why = verdict.why.replace(/^[A-Z](?=[a-z])/, (c) => c.toLowerCase());
   const curTier = tier(current.model);
   if (rank(verdict.model) < rank(curTier) && TARGETS[verdict.model]) {
@@ -58,7 +59,7 @@ export function decide({ verdict, current, turn, now }) {
 // Whether anything could be suggested before paying for a verdict: a model
 // below the current one whose detour could pay, or an effort above high.
 function worthAsking(current, turn, now) {
-  const best = { model: 'haiku', effort: 'low', confidence: 9, why: '' };
+  const best = { kind: 'new', model: 'haiku', effort: 'low', confidence: 9, why: '' };
   return decide({ verdict: best, current, turn, now }) != null;
 }
 

@@ -12,6 +12,8 @@ permissions:
 jobs:
   test:
     name: test (${{ matrix.os }}, node ${{ matrix.node }})
+    # The directory branch ships the plugin only: no tests, no bench.
+    if: github.ref_name != 'directory'
     strategy:
       fail-fast: false
       matrix:
@@ -30,6 +32,7 @@ jobs:
 
   checks:
     name: checks (manifests, bench tasks)
+    if: github.ref_name != 'directory'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

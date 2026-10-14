@@ -12,6 +12,8 @@
   "repository": "https://github.com/nudgeist/nudgeist",
   "supportUrl": "https://github.com/nudgeist/nudgeist/issues",
   "privacyPolicyUrl": "https://github.com/nudgeist/nudgeist#what-it-reads-writes-and-sends",
+  "documentationUrl": "https://nudgeist.github.io/",
+  "termsOfServiceUrl": "https://github.com/nudgeist/nudgeist/blob/main/LICENSE",
   "license": "MIT",
   "icon": "./assets/icon.png",
   "keywords": [

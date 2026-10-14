@@ -26,8 +26,9 @@ test('cost: a Haiku detour pays on a warm 50k Opus session; Sonnet at 150k and H
 });
 
 test('parseVerdict: one strict line, anywhere in the reply; anything else is null', () => {
-  assert.deepEqual(parseVerdict('haiku low 8 | one-line rename in one file.'), { model: 'haiku', effort: 'low', confidence: 8, why: 'one-line rename in one file' });
-  assert.equal(parseVerdict('Sure!\nsonnet medium 7 | small feature').model, 'sonnet');
+  assert.deepEqual(parseVerdict('new haiku low 8 | one-line rename in one file.'), { kind: 'new', model: 'haiku', effort: 'low', confidence: 8, why: 'one-line rename in one file' });
+  assert.equal(parseVerdict('Sure!\ncont sonnet medium 7 | approves the plan').kind, 'cont');
+  assert.equal(parseVerdict('haiku low 8 | no kind'), null);
   assert.equal(parseVerdict('haiku'), null);
   assert.equal(parseVerdict(undefined), null);
 });
@@ -47,7 +48,7 @@ function transcript(dir) {
     asst('side', { isSidechain: true }),
     user('<command-name>/effort</command-name>'),
     user('remove the red border'),
-    asst('m3'),
+    asst('m3', { message: { id: 'm3', model: 'claude-opus-5-5', usage: { input_tokens: 10, cache_read_input_tokens: 49_990, output_tokens: 500 }, content: [{ type: 'text', text: 'Done. Want me to also fix the footer?' }] } }),
   ];
   writeFileSync(t, rows.map((r) => JSON.stringify(r)).join('\n') + '\n');
   return { t, file };
@@ -66,21 +67,24 @@ test('readSession: last request, typical turn, earlier requests and files; brief
   assert.match(b, /Session title: Menu fixes/);
   assert.match(b, /menu\.css \(3 lines\)/);
   assert.match(b, /50k tokens/);
+  assert.match(b, /last reply ended with: "Done\. Want me to also fix the footer\?"/);
   assert.equal(brief(readSession(join(dir, 'missing.jsonl')), {}), 'New session, nothing done yet.');
 });
 
 test('decide: model when the detour pays, effort otherwise, nothing when unsure', () => {
   const now = Date.parse('2026-10-13T10:01:00Z');
   const current = { model: 'claude-opus-5-5', effort: 'xhigh', context: 50_000, at: Date.parse('2026-10-13T10:00:00Z'), ttl1h: true };
-  const m = decide({ verdict: { model: 'haiku', effort: 'low', confidence: 8, why: 'one-line rename' }, current, turn, now });
+  const m = decide({ verdict: { kind: 'new', model: 'haiku', effort: 'low', confidence: 8, why: 'one-line rename' }, current, turn, now });
   assert.match(m, /Haiku can likely handle this: one-line rename\.\nThis turn on Haiku \(~US\$0\.012 instead of ~US\$0\.06 at list price, estimated\): put \/nudgeist:haiku in front and send\./);
   assert.match(m, /Stay on Opus 5\.5: send it again unchanged\./);
-  const e = decide({ verdict: { model: 'opus', effort: 'medium', confidence: 8, why: 'small question' }, current, turn, now });
+  const e = decide({ verdict: { kind: 'new', model: 'opus', effort: 'medium', confidence: 8, why: 'small question' }, current, turn, now });
   assert.match(e, /\/nudgeist:medium/);
-  assert.equal(decide({ verdict: { model: 'haiku', effort: 'low', confidence: 6, why: 'x' }, current, turn, now }), null);
-  assert.equal(decide({ verdict: { model: 'opus', effort: 'high', confidence: 9, why: 'x' }, current, turn, now }), null);
+  assert.equal(decide({ verdict: { kind: 'new', model: 'haiku', effort: 'low', confidence: 6, why: 'x' }, current, turn, now }), null);
+  assert.equal(decide({ verdict: { kind: 'new', model: 'opus', effort: 'high', confidence: 9, why: 'x' }, current, turn, now }), null);
+  // A yes or an ok continues work already under way: no hold, whatever the rating.
+  assert.equal(decide({ verdict: { kind: 'cont', model: 'haiku', effort: 'low', confidence: 9, why: 'bare confirmation' }, current, turn, now }), null);
   const big = { ...current, context: 300_000, effort: 'high' };
-  assert.equal(decide({ verdict: { model: 'haiku', effort: 'low', confidence: 9, why: 'x' }, current: big, turn, now }), null);
+  assert.equal(decide({ verdict: { kind: 'new', model: 'haiku', effort: 'low', confidence: 9, why: 'x' }, current: big, turn, now }), null);
 });
 
 test('handle: holds once, resend continues, two declines go quiet, commands and unattended pass', () => {
@@ -89,7 +93,7 @@ test('handle: holds once, resend continues, two declines go quiet, commands and 
   const env = { CLAUDE_PLUGIN_DATA: tmp(), CLAUDE_CODE_SESSION_ATTENDED: '1' };
   const now = Date.parse('2026-10-13T10:01:00Z');
   let calls = 0;
-  const advisor = () => (calls++, { model: 'haiku', effort: 'low', confidence: 8, why: 'one-line rename' });
+  const advisor = () => (calls++, { kind: 'new', model: 'haiku', effort: 'low', confidence: 8, why: 'one-line rename' });
   const send = (prompt, e = env) => handle('prompt', { session_id: 's1', transcript_path: t, cwd: dir, prompt }, e, { advisor, now });
   assert.equal(send('rename foo to bar').decision, 'block');
   assert.equal(send('rename foo to bar'), null); // kept the model once
@@ -112,6 +116,6 @@ test('handle: no advisor call when nothing could be saved; first prompt uses the
   handle('start', { ...base, model: 'claude-haiku-5-5' }, env);
   assert.equal(handle('prompt', { ...base, prompt: 'rename foo' }, env, { advisor: never }), null);
   handle('switch', { ...base, to_model: 'claude-opus-5-5' }, env);
-  const out = handle('prompt', { ...base, prompt: 'rename foo' }, env, { advisor: () => ({ model: 'haiku', effort: 'low', confidence: 9, why: 'tiny edit' }) });
+  const out = handle('prompt', { ...base, prompt: 'rename foo' }, env, { advisor: () => ({ kind: 'new', model: 'haiku', effort: 'low', confidence: 9, why: 'tiny edit' }) });
   assert.equal(out.decision, 'block');
 });

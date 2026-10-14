@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "nudgeist",
   "displayName": "nudgeist",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Before your message reaches an expensive model, nudgeist asks a fast, low-cost one if the task really needs it and suggests a lighter model for that turn. You decide.",
   "author": {
     "name": "Iván Luna",
@@ -13,7 +13,7 @@
   "supportUrl": "https://github.com/nudgeist/nudgeist/issues",
   "privacyPolicyUrl": "https://github.com/nudgeist/nudgeist#what-it-reads-writes-and-sends",
   "license": "MIT",
-  "icon": "./assets/icon.png",
+  "icon": "https://raw.githubusercontent.com/nudgeist/nudgeist/main/assets/icon.png",
   "keywords": [
     "model",
     "effort",

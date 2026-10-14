@@ -8,14 +8,15 @@ import { execFileSync } from 'node:child_process';
 const SYSTEM = `You pick the cheapest Claude model and reasoning effort that will do a developer's next request in Claude Code well.
 Models, cheapest first: haiku (clear, local, mechanical work), sonnet (most everyday coding), opus (hard debugging, design, ambiguous or wide-reaching work).
 You see the request and a short summary of the session, not the code. When unsure, pick the stronger model and say so with a low confidence.
+First say whether the request starts new work (new) or continues, approves or asks about work already under way (cont), like a short yes, an ok or a question about progress. Rate the work itself, not the length of the message.
 Reply with exactly one line and nothing else:
-<haiku|sonnet|opus> <low|medium|high> <confidence 1-9> | <reason, at most 8 words>`;
+<new|cont> <haiku|sonnet|opus> <low|medium|high> <confidence 1-9> | <reason, at most 8 words>`;
 
-const LINE = /^\s*(haiku|sonnet|opus)\s+(low|medium|high)\s+([1-9])\s*\|\s*(.+?)\s*$/im;
+const LINE = /^\s*(new|cont)\s+(haiku|sonnet|opus)\s+(low|medium|high)\s+([1-9])\s*\|\s*(.+?)\s*$/im;
 
 export function parseVerdict(text) {
   const m = LINE.exec(typeof text === 'string' ? text : '');
-  return m ? { model: m[1].toLowerCase(), effort: m[2].toLowerCase(), confidence: Number(m[3]), why: m[4].replace(/[.\s]+$/, '').slice(0, 80) } : null;
+  return m ? { kind: m[1].toLowerCase(), model: m[2].toLowerCase(), effort: m[3].toLowerCase(), confidence: Number(m[4]), why: m[5].replace(/[.\s]+$/, '').slice(0, 80) } : null;
 }
 
 // The verdict, or null on any failure (no claude, timeout, odd reply): the

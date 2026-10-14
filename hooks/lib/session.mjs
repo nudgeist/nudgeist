@@ -41,6 +41,7 @@ export function readSession(path) {
   const files = [];
   const seen = new Set();
   let last = null;
+  let reply = null;
   let turn = null;
   for (const line of tail(path).split('\n')) {
     let rec;
@@ -61,6 +62,7 @@ export function readSession(path) {
     for (const b of Array.isArray(m.content) ? m.content : []) {
       const p = b.type === 'tool_use' && FILE_TOOLS.has(b.name) ? b.input?.file_path ?? b.input?.notebook_path : null;
       if (typeof p === 'string') files.push(p);
+      if (b.type === 'text' && typeof b.text === 'string' && b.text.trim()) reply = b.text.trim();
     }
     // One API request is written as several records that share its id and usage.
     if (seen.has(m.id)) continue;
@@ -85,6 +87,7 @@ export function readSession(path) {
     calls: median(done.map((t) => t.calls)),
     out: median(done.map((t) => t.out)),
     prompts: prompts.slice(-4),
+    reply,
     files: [...new Set(files.reverse())].slice(0, 5),
   };
 }
@@ -120,6 +123,8 @@ export function brief(facts, { cwd, title, prompt }) {
         })
         .join(', ')}`,
     );
+  // What a short answer like "yes" is answering: the end of Claude's last reply.
+  if (facts.reply) out.push(`Claude's last reply ended with: "${facts.reply.length > 200 ? `…${facts.reply.slice(-199)}` : facts.reply}"`);
   if (facts.last) out.push(`Conversation so far: ${Math.round(facts.last.context / 1000)}k tokens`);
   return out.join('\n') || 'New session, nothing done yet.';
 }

@@ -1,5 +1,5 @@
 {
-  "description": "nudgeist: remember the session model at start and after /model; before a prompt reaches the model, ask Haiku whether a cheaper model or a lower effort will do, and hold the prompt once with that suggestion when it pays. Schema: https://code.claude.com/docs/en/hooks#configuration",
+  "description": "nudgeist: remember the session model at start and after /model; before a prompt reaches the model, ask Haiku whether a cheaper model or a lower effort will do, and hold the prompt once with that suggestion when it pays.",
   "hooks": {
     "SessionStart": [{ "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gate.mjs", "start"], "timeout": 5 }] }],
     "PostModelSwitch": [{ "hooks": [{ "type": "command", "command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/gate.mjs", "switch"], "timeout": 5 }] }],

@@ -49,7 +49,7 @@ Each checked message costs one Haiku call: about 1,200 tokens and 1.5 to 3 secon
 ## How it's checked
 
 - `npm test`: the session reader, the cost arithmetic, the advisor's reply parser and the hold-once logic.
-- [`bench/`](bench/): twelve coding tasks graded by hidden tests, solved on Haiku and Opus, with every raw run, diff and advisor call published and hashed. On 2026-10-13 Haiku 5.5 passed all twelve. Of 36 advisor calls, 16 suggested Haiku and 20 held back; none suggested Haiku where it failed, but since Haiku never failed, that risk is still untested. Small samples on our own tasks: see [the limits](bench/README.md#limits).
+- [`bench/`](https://github.com/nudgeist/nudgeist/tree/main/bench): twelve coding tasks graded by hidden tests, solved on Haiku and Opus, with every raw run, diff and advisor call published and hashed. On 2026-10-13 Haiku 5.5 passed all twelve. Of 36 advisor calls, 16 suggested Haiku and 20 held back; none suggested Haiku where it failed, but since Haiku never failed, that risk is still untested. Small samples on our own tasks: see [the limits](https://github.com/nudgeist/nudgeist/blob/main/bench/README.md#limits).
 
 ## What it reads, writes and sends
 

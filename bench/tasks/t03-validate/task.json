@@ -1,5 +1,0 @@
-{
-  "id": "t03-validate",
-  "title": "Validate arguments",
-  "prompt": "In applyDiscount, throw a TypeError if amount is not a finite number, and a RangeError if percent is outside 0 to 100."
-}

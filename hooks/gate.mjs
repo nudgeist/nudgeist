@@ -5,7 +5,7 @@
 // that suggestion. Sending it again unchanged continues; /nudgeist:haiku,
 // /nudgeist:sonnet, /nudgeist:low or /nudgeist:medium in front runs that one
 // turn lighter. It never switches anything itself and never blocks on its own
-// error. Hook input: https://code.claude.com/docs/en/hooks#userpromptsubmit
+// error.
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

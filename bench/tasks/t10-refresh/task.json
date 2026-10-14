@@ -1,5 +1,0 @@
-{
-  "id": "t10-refresh",
-  "title": "Fix a concurrency bug",
-  "prompt": "When several requests get a 401 at the same time, we call refreshToken once per request and the auth server rate-limits us. Make concurrent callers share a single refresh, and make sure a failed refresh does not block later ones."
-}

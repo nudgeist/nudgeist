@@ -1,5 +1,4 @@
-// List prices per million tokens (platform.claude.com/docs/en/about-claude/pricing,
-// read 2026-10-13). Only these exact models get a US$ figure in a notice.
+// List prices per million tokens (Anthropic's pricing page, read 2026-10-13). Only these exact models get a US$ figure in a notice.
 // ponytail: one table by hand; update it when Anthropic changes prices.
 const PRICES = {
   'claude-opus-5-5': { w5m: 5, w1h: 8, read: 0.2, out: 20 },

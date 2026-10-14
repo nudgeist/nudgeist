@@ -1,5 +1,0 @@
-{
-  "id": "t08-retry",
-  "title": "Extract duplicated logic",
-  "prompt": "fetchUser, fetchOrders and fetchInvoices repeat the same retry loop. Extract it into an exported withRetry(fn, attempts = 3) helper in src/api.js and use it in all three, without changing their behavior."
-}

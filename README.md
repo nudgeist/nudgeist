@@ -16,6 +16,17 @@ Before your message reaches an expensive model, nudgeist asks a fast, low-cost o
 
 Your message stays in the input box. Put `/nudgeist:haiku` in front and press Enter, or just press Enter to keep your model. Either way, your next message runs on the model and effort you chose for the session. After the first turn, the notice also shows the estimated cost of both options.
 
+## Install
+
+In Claude Code:
+
+```
+/plugin marketplace add nudgeist/nudgeist
+/plugin install nudgeist@nudgeist
+```
+
+It needs Node.js 18 or later: the hooks run with `node`.
+
 ## How it decides
 
 1. **What you're running.** It reads the model and effort of your last turn from the session transcript, so it sees `/model` and `/effort` changes. Before the first turn it uses the model the session started with.

@@ -19,6 +19,8 @@ jobs:
         node: [18, 22]
     runs-on: ${{ matrix.os }}
     steps:
+      # The directory branch has no .gitattributes: keep LF on Windows so the bench hashes match.
+      - run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v7
         with:

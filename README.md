@@ -56,7 +56,7 @@ Each checked message costs one Haiku call: about 1,200 tokens and 1.5 to 3 secon
 ## What it reads, writes and sends
 
 - **Reads** the session transcript and the line counts of the files the session touched, on your machine.
-- **Writes** a small state file per session in the plugin's data folder: the model at start, the message on hold, and how often you accepted or kept your model.
+- **Writes** a small state file per session in the plugin's data folder: the model at start, a fingerprint (SHA-256 hash) of the message on hold, never its text, and how often you accepted or kept your model.
 - **Sends** your message and the session brief to Haiku through your own `claude` login. Nothing goes anywhere but Anthropic, where your message was going anyway. No telemetry.
 
 ## When it stays out of the way

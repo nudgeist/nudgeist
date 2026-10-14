@@ -22,7 +22,7 @@ const DEFAULT_TURN = { calls: 3, out: 1500 };
 
 // claude-opus-5-5 → Opus 5.5
 const modelName = (m) => m.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/-(\d+)$/, ' $1').replace(/^\w/, (c) => c.toUpperCase());
-const usd = (v) => `~US$${Number(v.toPrecision(2))}`;
+const usd = (v) => '~US$' + Number(v.toPrecision(2));
 
 // The suggestion for this verdict, or null. Model first (it saves the most),
 // effort when a model switch doesn't pay or isn't needed. A message that

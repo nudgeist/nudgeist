@@ -13,11 +13,20 @@
       "category": "productivity",
       "keywords": [
         "model",
+        "model-selection",
         "effort",
+        "reasoning-effort",
         "cost",
-        "hooks",
+        "cost-saving",
+        "token-cost",
+        "usage-limits",
         "prompt-cache",
-        "haiku"
+        "hooks",
+        "haiku",
+        "sonnet",
+        "opus",
+        "second-opinion",
+        "claude-code"
       ]
     }
   ]

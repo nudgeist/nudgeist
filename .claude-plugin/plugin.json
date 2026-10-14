@@ -16,9 +16,19 @@
   "icon": "./assets/icon.png",
   "keywords": [
     "model",
+    "model-selection",
     "effort",
+    "reasoning-effort",
     "cost",
+    "cost-saving",
+    "token-cost",
+    "usage-limits",
+    "prompt-cache",
     "hooks",
-    "prompt-cache"
+    "haiku",
+    "sonnet",
+    "opus",
+    "second-opinion",
+    "claude-code"
   ]
 }

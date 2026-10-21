@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -118,4 +118,38 @@ test('handle: no advisor call when nothing could be saved; first prompt uses the
   handle('switch', { ...base, to_model: 'claude-opus-5-5' }, env);
   const out = handle('prompt', { ...base, prompt: 'rename foo' }, env, { advisor: () => ({ kind: 'new', model: 'haiku', effort: 'low', confidence: 9, why: 'tiny edit' }) });
   assert.equal(out.decision, 'block');
+});
+
+test('decide: dated model ids read as their family, and exactly half on a cold cache counts', () => {
+  const now = Date.parse('2026-10-13T12:00:00Z');
+  const dated = { model: 'claude-opus-4-1-20250805', effort: 'high', context: 50_000, at: Date.parse('2026-10-13T11:59:00Z'), ttl1h: true };
+  assert.match(decide({ verdict: { kind: 'new', model: 'haiku', effort: 'low', confidence: 8, why: 'x' }, current: dated, turn, now }), /Stay on Opus 4\.1: send it again unchanged\./);
+  const cold = { model: 'claude-opus-5-5', effort: 'high', context: 80_000, at: Date.parse('2026-10-13T09:00:00Z'), ttl1h: true };
+  assert.match(decide({ verdict: { kind: 'new', model: 'sonnet', effort: 'medium', confidence: 8, why: 'everyday edit' }, current: cold, turn, now }), /\/nudgeist:sonnet/);
+});
+
+test('handle: accepting clears the hold; only the four commands accept; old state files go at start', () => {
+  const dir = tmp();
+  const { t } = transcript(dir);
+  const data = tmp();
+  const env = { CLAUDE_PLUGIN_DATA: data, CLAUDE_CODE_SESSION_ATTENDED: '1' };
+  const now = Date.parse('2026-10-13T10:01:00Z');
+  const advisor = () => ({ kind: 'new', model: 'haiku', effort: 'low', confidence: 8, why: 'one-line rename' });
+  const send = (prompt) => handle('prompt', { session_id: 's4', transcript_path: t, cwd: dir, prompt }, env, { advisor, now });
+  const state = () => JSON.parse(readFileSync(join(data, 's4.json'), 'utf8'));
+  assert.equal(send('rename foo to bar').decision, 'block');
+  assert.equal(send('/nudgeist:help'), null);
+  assert.equal(state().accepts, undefined);
+  assert.equal(send('/nudgeist:haiku rename foo to bar'), null);
+  assert.equal(state().held, undefined);
+  assert.equal(send('rename foo to bar').decision, 'block', 'the same text later is a new message, not a decline');
+  assert.equal(state().declines, 0);
+
+  const old = join(data, 'old.json');
+  writeFileSync(old, '{}');
+  const week = new Date(now - 8 * 24 * 3600_000);
+  utimesSync(old, week, week);
+  handle('start', { session_id: 's5', model: 'claude-opus-5-5' }, env, { now });
+  assert.equal(existsSync(old), false);
+  assert.equal(existsSync(join(data, 's4.json')), true);
 });

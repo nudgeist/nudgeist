@@ -7,7 +7,7 @@
 // turn lighter. It never switches anything itself and never blocks on its own
 // error.
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { TARGETS, detour, listed, rank, tier } from './lib/cost.mjs';
@@ -19,9 +19,12 @@ export const MAX_SPEND_RATIO = 0.5; // a model switch must at least halve the tu
 export const QUIET_AFTER = 2; // declines in a row
 const HIGH_EFFORT = new Set(['xhigh', 'max']);
 const DEFAULT_TURN = { calls: 3, out: 1500 };
+const STATE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+// The commands that run one turn lighter: sending one accepts the nudge.
+const ACCEPT = /^\/nudgeist:(haiku|sonnet|low|medium)(\s|$)/;
 
-// claude-opus-5-5 → Opus 5.5
-const modelName = (m) => m.replace(/^claude-/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/-(\d+)$/, ' $1').replace(/^\w/, (c) => c.toUpperCase());
+// claude-opus-5-5 → Opus 5.5; a date or [1m] suffix (claude-opus-4-1-20250805) is dropped.
+const modelName = (m) => m.replace(/^claude-/, '').replace(/\[1m\]$/i, '').replace(/-\d{8}$/, '').replace(/-(\d+)-(\d+)$/, ' $1.$2').replace(/-(\d+)$/, ' $1').replace(/^\w/, (c) => c.toUpperCase());
 const usd = (v) => '~US$' + Number(v.toPrecision(2));
 
 // The suggestion for this verdict, or null. Model first (it saves the most),
@@ -35,7 +38,9 @@ export function decide({ verdict, current, turn, now }) {
     const warm = Number.isFinite(current.at) && now - current.at < (current.ttl1h ? 60 : 5) * 60_000;
     const target = TARGETS[verdict.model];
     const cost = detour({ current: current.model, target, context: current.context || 0, ...turn, warm, ttl1h: current.ttl1h });
-    if (cost && cost.go <= cost.stay * MAX_SPEND_RATIO) {
+    // Exactly half counts (Sonnet against Opus on a cold cache); the tolerance
+    // keeps float rounding from deciding it.
+    if (cost && cost.go <= cost.stay * MAX_SPEND_RATIO + 1e-9) {
       const name = modelName(target).replace(/ [\d.]+$/, '');
       // No figure before the first request: its setup size isn't known yet.
       const money = listed(current.model) && current.context > 0 ? ` (${usd(cost.go)} instead of ${usd(cost.stay)} at list price, estimated)` : '';
@@ -63,6 +68,16 @@ function worthAsking(current, turn, now) {
   return decide({ verdict: best, current, turn, now }) != null;
 }
 
+// Removes state files of sessions idle for a week. Best effort.
+function prune(dir, now) {
+  try {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (name.endsWith('.json') && now - statSync(p).mtimeMs > STATE_MAX_AGE_MS) unlinkSync(p);
+    }
+  } catch {}
+}
+
 // event: "start" (SessionStart), "switch" (PostModelSwitch) or "prompt" (UserPromptSubmit).
 export function handle(event, input, env = process.env, { advisor = askAdvisor, now = Date.now() } = {}) {
   if (env.NUDGEIST_CHILD || /^(0|off|false)$/i.test(env.NUDGEIST || '')) return null;
@@ -77,6 +92,7 @@ export function handle(event, input, env = process.env, { advisor = askAdvisor, 
     mkdirSync(dir, { recursive: true });
     writeFileSync(file, JSON.stringify(state));
   };
+  if (event === 'start') prune(dir, now);
   // Only an interactive SessionStart carries the model (2.1.296; -p and SDK don't).
   const model = event === 'start' ? input.model : event === 'switch' ? input.to_model : null;
   if (typeof model === 'string') {
@@ -86,7 +102,8 @@ export function handle(event, input, env = process.env, { advisor = askAdvisor, 
   }
   if (event !== 'prompt' || env.CLAUDE_CODE_SESSION_ATTENDED !== '1') return null; // only someone at the session can answer
   const prompt = typeof input.prompt === 'string' ? input.prompt.trim() : '';
-  if (prompt.startsWith('/nudgeist:')) {
+  if (ACCEPT.test(prompt)) {
+    delete state.held;
     state.declines = 0;
     state.accepts = (state.accepts || 0) + 1;
     save();

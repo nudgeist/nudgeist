@@ -14,7 +14,7 @@ Before your message reaches an expensive model, nudgeist asks a fast, low-cost o
   Stay on Opus 5.5: send it again unchanged.
 ```
 
-The notice quotes your message back, so nothing is lost. Send it with `/nudgeist:haiku` in front, or send it again unchanged to keep your model. Either way, your next message runs on the model and effort you chose for the session. After the first turn, the notice also shows the estimated cost of both options.
+The notice quotes your message back, so nothing is lost. Send it with `/nudgeist:haiku` in front, or send it again unchanged to keep your model. Either way, your next message runs on the model and effort you chose for the session. After the first turn on a 5.5 model, a notice suggesting a lighter model also shows the estimated cost of both options.
 
 ## Install
 
@@ -29,10 +29,10 @@ It needs Node.js 18 or later: the hooks run with `node`.
 
 ## How it decides
 
-1. **What you're running.** It reads the model and effort of your last turn from the session transcript, so it sees `/model` and `/effort` changes. Before the first turn it uses the model the session started with.
+1. **What you're running.** It reads the model and effort of your last turn from the session transcript, and Claude Code tells it about `/model` as it happens. An `/effort` change counts once a turn has run on it. Before the first turn it uses the model the session started with.
 2. **Whether anything can be saved.** If you're already on a model and effort with nothing cheaper to offer, it does nothing and adds no wait.
-3. **A second opinion.** Haiku reads your message plus a few lines about the session: its title, your last requests, the end of Claude's last reply, and the files in play with their sizes. It doesn't open your files. It answers with a model, an effort, a confidence and a reason, and says whether your message starts new work. A yes, an ok or a question about progress continues the work already under way, so it keeps your model and effort.
-4. **Whether switching pays.** A model you haven't used in this session has to read the whole conversation from scratch, while your current model reads it from the prompt cache at a fraction of the price. nudgeist does that arithmetic with list prices and the cache lifetime your session actually uses, and only suggests a model when it at least halves the turn's cost. When it doesn't pay, it may suggest a lower effort instead, which keeps the cache.
+3. **A second opinion.** Haiku reads your message plus a few lines about the session: its title, the project folder's name, your last requests, the end of Claude's last reply, the files in play with their sizes, and the size of the conversation. It doesn't open your files. It answers with a model, an effort, a confidence and a reason, and says whether your message starts new work. A yes, an ok or a question about progress continues the work already under way, so it keeps your model and effort.
+4. **Whether switching pays.** A model you haven't used in this session has to read the whole conversation from scratch, while your current model reads it from the prompt cache at a fraction of its usual price. nudgeist does that arithmetic with list prices and the cache lifetime your session actually uses, and only suggests a model when it at least halves the turn's cost. When it doesn't pay, it may suggest a lower effort instead, which on the 5.5 models and Fable 5.1 with a Claude plan or an Anthropic Console account keeps the cache.
 5. **One question, then quiet.** It holds a message once. If you keep your model twice in a row, it stays quiet for the rest of the session.
 
 ## Commands
@@ -44,20 +44,24 @@ It needs Node.js 18 or later: the hooks run with `node`.
 | `/nudgeist:low <message>` | your model at low effort |
 | `/nudgeist:medium <message>` | your model at medium effort |
 
+`/nudgeist:check <message>` asks Haiku which of these that message needs, without doing the work.
+
 ## What it costs
 
-Each checked message costs one Haiku call: about 1,200 tokens and 1.5 to 3 seconds, measured on Claude Code 2.1.296. Messages with nothing to save aren't checked, and a call that takes longer than 8 seconds lets your message through without a notice.
+Each checked message costs one Haiku call: about 1,200 tokens and usually about 2 seconds (median 1.9 s; 27 of 36 calls took 1.5 to 3 s, 2 took over 8 s), measured on Claude Code 2.1.296. Messages with nothing to save aren't checked, and a call that takes longer than 8 seconds lets your message through without a notice.
 
 ## How it's checked
 
 - `npm test`: the session reader, the cost arithmetic, the advisor's reply parser and the hold-once logic.
-- [`bench/`](bench/): twelve coding tasks graded by hidden tests, solved on Haiku and Opus, with every raw run, diff and advisor call published and hashed. On 2026-10-13 Haiku 5.5 passed all twelve. Of 36 advisor calls, 16 suggested Haiku and 20 held back; none suggested Haiku where it failed, but since Haiku never failed, that risk is still untested. The tasks, the sample sizes and what they don't cover are in [the limits](bench/README.md#limits).
+- [`bench/`](bench/): twelve coding tasks graded by hidden tests, solved on Haiku and Opus, with every raw run, diff and advisor call published and hashed. On 2026-10-13 Haiku 5.5 passed all twelve. Of 36 advisor calls, 16 suggested Haiku and 20 held back; none suggested Haiku where it failed, but since Haiku never failed, that risk is still untested. Those runs used an earlier version of the session brief. The tasks, the sample sizes and what they don't cover are in [the limits](bench/README.md#limits).
 
 ## What it reads, writes and sends
 
-- **Reads** the session transcript and the line counts of the files in play, on your machine.
-- **Writes** a small state file per session in the plugin's data folder: the model at start, a fingerprint (SHA-256 hash) of the message on hold, never its text, how many notices it showed, how often you accepted or kept your model, and whether it went quiet. Files of sessions idle for a week are removed.
-- **Sends** your message and the session brief to Haiku through your own `claude` login. Nothing goes anywhere but Anthropic, where your message was going anyway. No telemetry.
+- **Reads** up to the last 512 KB of the session transcript, which can include what Claude read from your files, and the size of the files in play, on your machine. It never opens those files, and only what's listed under Sends leaves your machine.
+- **Writes** a small state file per session in the plugin's data folder: the session's model, a fingerprint (SHA-256 hash) of the message on hold, never its text, how many notices it showed, how often you accepted or kept your model, and whether it went quiet. Files of sessions idle for a week are removed.
+- **Sends** your message and the session brief to Haiku by running your own Claude Code once per checked message, which counts toward your usage. Claude Code adds its usual context, listed in the privacy policy. They normally go wherever your Claude Code sends your messages: Anthropic, or the gateway or cloud provider you set up. That run has no tools, doesn't load your settings files, so a sign-in script set only there doesn't apply to it, and turns off its own auto memory, updater and telemetry. nudgeist has no server of its own and no telemetry.
+
+The [privacy policy](PRIVACY.md) has the details.
 
 ## When it stays out of the way
 
@@ -69,7 +73,7 @@ Each checked message costs one Haiku call: about 1,200 tokens and 1.5 to 3 secon
 
 - The advisor sees a summary, not your code, so it can be wrong. That's why it asks instead of switching.
 - In the desktop app the first message of a session isn't checked: Claude Code doesn't tell hooks the model there until the first turn.
-- Prices are list prices for the 5.5 models; older models are priced as their 5.5 family member, which only understates savings. On a subscription you pay a plan, not per token: the figures show relative usage.
+- Prices are list prices for the 5.5 models. An older model you're running is priced as its 5.5 family member, which understates savings. The lighter model is always priced as its 5.5 version, so on a cloud provider where `haiku` or `sonnet` means an older model, savings are overstated. On a subscription you pay a plan, not per token, so treat the figures as a rough guide.
 
 ## Also by the author
 

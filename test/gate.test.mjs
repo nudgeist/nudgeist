@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { appendFileSync, chmodSync, existsSync, mkdtempSync, readFileSync, realpathSync, utimesSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { decide, handle } from '../hooks/gate.mjs';
 import { detour, priceOf, tier } from '../hooks/lib/cost.mjs';
-import { parseVerdict } from '../hooks/lib/advisor.mjs';
+import { askAdvisor, parseVerdict } from '../hooks/lib/advisor.mjs';
 import { brief, readSession } from '../hooks/lib/session.mjs';
 
 const tmp = () => mkdtempSync(join(tmpdir(), 'nudgeist-'));
@@ -31,6 +31,15 @@ test('parseVerdict: one strict line, anywhere in the reply; anything else is nul
   assert.equal(parseVerdict('haiku low 8 | no kind'), null);
   assert.equal(parseVerdict('haiku'), null);
   assert.equal(parseVerdict(undefined), null);
+});
+
+test('askAdvisor: the child runs outside the project, without auto memory; a failure lets the message through', { skip: process.platform === 'win32' }, () => {
+  const script = join(tmp(), 'fake-claude');
+  writeFileSync(script, `#!/usr/bin/env node\nconst where = process.cwd() === ${JSON.stringify(realpathSync(homedir()))} && process.env.CLAUDE_CODE_DISABLE_AUTO_MEMORY === '1' ? 'home' : 'elsewhere';\nconsole.log(JSON.stringify({ result: 'new haiku low 8 | ' + where, total_cost_usd: 0 }));\n`);
+  chmodSync(script, 0o755);
+  const env = { ...process.env, CLAUDE_CODE_EXECPATH: script };
+  assert.equal(askAdvisor({ prompt: 'x', brief: 'y', env }).why, 'home');
+  assert.equal(askAdvisor({ prompt: 'x', brief: 'y', env: { ...env, CLAUDE_CODE_EXECPATH: join(tmp(), 'missing') } }), null);
 });
 
 function transcript(dir) {
@@ -62,10 +71,11 @@ test('readSession: last request, typical turn, earlier requests and files; brief
   assert.equal(s.calls, 2); // turns of 2 and 1 requests; the upper middle
   assert.deepEqual(s.prompts, ['fix the menu on mobile', 'remove the red border']);
   assert.deepEqual(s.files, [file]);
+  chmodSync(file, 0); // its size still shows: the file is never opened
   const b = brief(s, { cwd: dir, title: 'Menu fixes', prompt: 'remove the red border' });
   assert.match(b, /Earlier requests: "fix the menu on mobile"\n/);
   assert.match(b, /Session title: Menu fixes/);
-  assert.match(b, /menu\.css \(3 lines\)/);
+  assert.match(b, /menu\.css \(<1 KB\)/);
   assert.match(b, /50k tokens/);
   assert.match(b, /last reply ended with: "Done\. Want me to also fix the footer\?"/);
   assert.equal(brief(readSession(join(dir, 'missing.jsonl')), {}), 'New session, nothing done yet.');
@@ -118,6 +128,23 @@ test('handle: no advisor call when nothing could be saved; first prompt uses the
   handle('switch', { ...base, to_model: 'claude-opus-5-5' }, env);
   const out = handle('prompt', { ...base, prompt: 'rename foo' }, env, { advisor: () => ({ kind: 'new', model: 'haiku', effort: 'low', confidence: 9, why: 'tiny edit' }) });
   assert.equal(out.decision, 'block');
+});
+
+test('a one-turn command is not the session model; /model counts at once; network paths get no size', () => {
+  const dir = tmp();
+  const { t } = transcript(dir);
+  const at = '2026-10-13T10:00:30Z';
+  appendFileSync(t, JSON.stringify({ type: 'user', message: { content: '<command-name>/nudgeist:sonnet</command-name>' } }) + '\n' + JSON.stringify({ type: 'assistant', timestamp: at, message: { id: 'm9', model: 'claude-sonnet-5-5', usage: { input_tokens: 10, output_tokens: 5 }, content: [{ type: 'text', text: 'done' }] } }) + '\n');
+  const s = readSession(t);
+  assert.equal(s.last.model, 'claude-opus-5-5');
+  assert.equal(s.reply, 'done');
+  const env = { CLAUDE_PLUGIN_DATA: tmp(), CLAUDE_CODE_SESSION_ATTENDED: '1' };
+  const base = { session_id: 's6', transcript_path: t, cwd: dir };
+  const opts = { advisor: () => ({ kind: 'new', model: 'haiku', effort: 'low', confidence: 8, why: 'one-line rename' }), now: Date.parse('2026-10-13T10:01:00Z') };
+  assert.match(handle('prompt', { ...base, prompt: 'rename foo' }, env, opts).reason, /Stay on Opus 5\.5/);
+  handle('switch', { ...base, to_model: 'claude-sonnet-5-5' }, env);
+  assert.match(handle('prompt', { ...base, prompt: 'rename bar' }, env, opts).reason, /Stay on Sonnet 5\.5/);
+  assert.doesNotMatch(brief({ prompts: [], files: ['//host/share/x', '/net/host/x'], last: null, reply: null }, {}), /KB/);
 });
 
 test('decide: dated model ids read as their family, and exactly half on a cold cache counts', () => {

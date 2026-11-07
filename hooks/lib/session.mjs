@@ -2,7 +2,7 @@
 // anywhere but the advisor: the last request's model, effort and context, how
 // much a typical turn does, and a short brief of what the session is about.
 // The transcript format isn't a stable API, so anything unexpected is skipped.
-import { closeSync, fstatSync, openSync, readFileSync, readSync, statSync } from 'node:fs';
+import { closeSync, fstatSync, openSync, readSync, statSync } from 'node:fs';
 import { isAbsolute, relative } from 'node:path';
 
 const SLICE_BYTES = 512 * 1024;
@@ -43,6 +43,7 @@ export function readSession(path) {
   let last = null;
   let reply = null;
   let turn = null;
+  let oneTurn = false;
   for (const line of tail(path).split('\n')) {
     let rec;
     try {
@@ -50,8 +51,12 @@ export function readSession(path) {
     } catch {
       continue; // the slice's first line can be cut
     }
+    // A turn run through one of the commands isn't the session's model or effort.
+    const c = rec.type === 'user' && !rec.isMeta ? rec.message?.content : null;
+    if (typeof c === 'string' && c.includes('<command-name>')) oneTurn = /<command-name>\/nudgeist:(haiku|sonnet|low|medium|check)</.test(c);
     const text = typedText(rec);
     if (text) {
+      oneTurn = false;
       prompts.push(text);
       turn = { calls: 0, out: 0 };
       turns.push(turn);
@@ -67,6 +72,7 @@ export function readSession(path) {
     // One API request is written as several records that share its id and usage.
     if (seen.has(m.id)) continue;
     seen.add(m.id);
+    if (oneTurn) continue;
     const u = m.usage;
     const context = (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0);
     last = {
@@ -92,12 +98,13 @@ export function readSession(path) {
   };
 }
 
-function lines(path) {
+// From the file system's record, never by opening the file: a session can touch
+// files that are none of this plugin's business, such as a .env.
+function size(path) {
+  if (/^([\\/]{2}|\/net\/)/.test(path)) return null; // asking about a network path contacts its host
   try {
-    if (statSync(path).size > 2 * 1024 * 1024) return null;
-    let n = 0;
-    for (const ch of readFileSync(path, 'utf8')) if (ch === '\n') n++;
-    return n;
+    const kb = statSync(path).size / 1024;
+    return kb < 1 ? '<1 KB' : `${Math.round(kb).toLocaleString('en-US')} KB`;
   } catch {
     return null;
   }
@@ -117,9 +124,9 @@ export function brief(facts, { cwd, title, prompt }) {
     out.push(
       `Files in play: ${facts.files
         .map((f) => {
-          const n = lines(f);
+          const s = size(f);
           const name = cwd && isAbsolute(f) && !relative(cwd, f).startsWith('..') ? relative(cwd, f) : f;
-          return n == null ? name : `${name} (${n.toLocaleString('en-US')} lines)`;
+          return s == null ? name : `${name} (${s})`;
         })
         .join(', ')}`,
     );

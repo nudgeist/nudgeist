@@ -2,8 +2,9 @@
 // cheapest model and effort it expects to do the job well. It runs through
 // the user's own `claude` (same account, same login), with no tools, no
 // settings, no plugins and no session file, so it can't act or recurse.
-// Measured 2026-10-13 (2.1.296): ~1.2k tokens and 1.7-3 s per call.
+// Measured 2026-10-13 (2.1.296): ~1.2k tokens and a median of 1.9 s per call.
 import { execFileSync } from 'node:child_process';
+import { homedir } from 'node:os';
 
 const SYSTEM = `You pick the cheapest Claude model and reasoning effort that will do a developer's next request in Claude Code well.
 Models, cheapest first: haiku (clear, local, mechanical work), sonnet (most everyday coding), opus (hard debugging, design, ambiguous or wide-reaching work).
@@ -32,8 +33,12 @@ export function askAdvisor({ prompt, brief, env = process.env, timeoutMs = 8000 
         encoding: 'utf8',
         timeout: timeoutMs,
         stdio: ['pipe', 'pipe', 'ignore'],
-        // Startup without these took ~4 s of the ~8 s.
-        env: { ...env, NUDGEIST_CHILD: '1', CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', DISABLE_AUTOUPDATER: '1', DISABLE_TELEMETRY: '1', MAX_THINKING_TOKENS: '0' },
+        // Not the project: Windows looks for a bare command in the working folder
+        // first, and a repository could carry its own claude.exe.
+        cwd: homedir(),
+        // Startup without the last three took ~4 s of the ~8 s. Auto memory would
+        // otherwise reach Haiku, even with no setting sources.
+        env: { ...env, NUDGEIST_CHILD: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1', CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1', DISABLE_AUTOUPDATER: '1', DISABLE_TELEMETRY: '1', MAX_THINKING_TOKENS: '0' },
       },
     );
     const r = JSON.parse(raw);

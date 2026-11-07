@@ -7,7 +7,7 @@
 // turn lighter. It never switches anything itself and never blocks on its own
 // error.
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { TARGETS, detour, listed, rank, tier } from './lib/cost.mjs';
@@ -120,10 +120,15 @@ export function handle(event, input, env = process.env, { advisor = askAdvisor, 
     save();
     return quiet ? { systemMessage: 'nudgeist: you kept your model twice in a row, so it stays quiet for the rest of this session.' } : null;
   }
-  if (state.quiet) return null;
+  if (state.quiet) {
+    save(); // a quiet session in use stays quiet: its file isn't pruned
+    return null;
+  }
 
   const facts = readSession(input.transcript_path);
-  const current = facts.last ?? (state.model ? { model: state.model, effort: null, context: 0, at: NaN, ttl1h: false } : null);
+  // After /model the session is on another model before any turn shows it, and that model's cache is cold.
+  const switched = state.model && facts.last && tier(state.model) !== tier(facts.last.model);
+  const current = switched ? { ...facts.last, model: state.model, at: NaN } : facts.last ?? (state.model ? { model: state.model, effort: null, context: 0, at: NaN, ttl1h: false } : null);
   if (!current || !tier(current.model)) return null;
   const turn = { calls: facts.calls ?? DEFAULT_TURN.calls, out: facts.out ?? DEFAULT_TURN.out };
   if (!worthAsking(current, turn, now)) return null; // nothing to save: no advisor, no wait
@@ -136,7 +141,16 @@ export function handle(event, input, env = process.env, { advisor = askAdvisor, 
   return { decision: 'block', reason };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// The real path: a symlinked plugin folder must still run.
+const isMain = () => {
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+  } catch {
+    return false;
+  }
+};
+
+if (isMain()) {
   let raw = '';
   process.stdin.setEncoding('utf8');
   process.stdin

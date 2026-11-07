@@ -2,72 +2,65 @@
 
 **A nudge, not a switch.**
 
-Before your message reaches an expensive model, nudgeist asks a fast, low-cost one if the task really needs it and suggests a lighter model for that turn. You decide.
+Not every message needs your most expensive model. Ask a fast, low-cost one what a message really needs, then run that one message on a lighter model or effort. Your session stays as you set it. You decide.
 
 ```
-❯ fix the typo in README: recieve
+❯ /nudgeist:check fix the typo in README: recieve
 
-  nudgeist: Haiku can likely handle this: single typo fix in README, mechanical edit.
-  This turn on Haiku: put /nudgeist:haiku in front and send.
-  Stay on Opus 5.5: send it again unchanged.
+  Haiku: single typo fix, mechanical edit.
+  /nudgeist:haiku fix the typo in README: recieve
 ```
-
-Your message stays in the input box. Put `/nudgeist:haiku` in front and press Enter, or just press Enter to keep your model. Either way, your next message runs on the model and effort you chose for the session. After the first turn, the notice also shows the estimated cost of both options.
-
-## Install
-
-In Claude Code:
-
-```
-/plugin marketplace add nudgeist/nudgeist
-/plugin install nudgeist@nudgeist
-```
-
-It needs Node.js 18 or later: the hooks run with `node`.
-
-## How it decides
-
-1. **What you're running.** It reads the model and effort of your last turn from the session transcript, so it sees `/model` and `/effort` changes. Before the first turn it uses the model the session started with.
-2. **Whether anything can be saved.** If you're already on a model and effort with nothing cheaper to offer, it does nothing and adds no wait.
-3. **A second opinion.** Haiku reads your message plus a few lines about the session: its title, your last requests, the end of Claude's last reply, and the files in play with their sizes. It never sees your code. It answers with a model, an effort, a confidence and a reason, and says whether your message starts new work. A yes, an ok or a question about progress continues the work already under way, so it keeps your model and effort.
-4. **Whether switching pays.** A model you haven't used in this session has to read the whole conversation from scratch, while your current model reads it from the prompt cache at a fraction of the price. nudgeist does that arithmetic with list prices and the cache lifetime your session actually uses, and only suggests a model when it at least halves the turn's cost. When it doesn't pay, it may suggest a lower effort instead, which keeps the cache.
-5. **One question, then quiet.** It holds a message once. If you keep your model twice in a row, it stays quiet for the rest of the session.
 
 ## Commands
 
-| Command | Runs this one message on |
+| Command | What it does |
 |---|---|
-| `/nudgeist:haiku <message>` | Haiku |
-| `/nudgeist:sonnet <message>` | Sonnet |
-| `/nudgeist:low <message>` | your model at low effort |
-| `/nudgeist:medium <message>` | your model at medium effort |
+| `/nudgeist:check <message>` | Asks Haiku which model and effort that message needs. It's told not to do the work. |
+| `/nudgeist:haiku <message>` | Runs this one message on Haiku. |
+| `/nudgeist:sonnet <message>` | Runs this one message on Sonnet. |
+| `/nudgeist:low <message>` | Runs this one message on your model at low effort. |
+| `/nudgeist:medium <message>` | Runs this one message on your model at medium effort. |
 
-## What it costs
+Your next message goes back to the model and effort you chose for the session. That's the difference from `/model` and `/effort`, which change the session until you change them back.
 
-Each checked message costs one Haiku call: about 1,200 tokens and 1.5 to 3 seconds, measured on Claude Code 2.1.296. Messages with nothing to save aren't checked.
+## Examples
 
-## How it's checked
+- `/nudgeist:check add retries with backoff to an upload client`: two lines back, a model with the reason, then the command to run. Nothing gets changed.
+- `/nudgeist:haiku write a Python function that checks whether a string is a palindrome`: Haiku writes it, and your next message is back on your session's model.
+- `/nudgeist:sonnet write unit tests for a function that adds two numbers`: everyday coding at the start of a session on Opus.
+- `/nudgeist:low explain in one line what a README file is for`: your model answers at low effort.
 
-- `npm test`: the session reader, the cost arithmetic, the advisor's reply parser and the hold-once logic.
-- [`bench/`](https://github.com/nudgeist/nudgeist/tree/main/bench): twelve coding tasks graded by hidden tests, solved on Haiku and Opus, with every raw run, diff and advisor call published and hashed. On 2026-10-13 Haiku 5.5 passed all twelve. Of 36 advisor calls, 16 suggested Haiku and 20 held back; none suggested Haiku where it failed, but since Haiku never failed, that risk is still untested. Small samples on our own tasks: see [the limits](https://github.com/nudgeist/nudgeist/blob/main/bench/README.md#limits).
+## When a lighter model pays
+
+Each model has its own prompt cache. A model you haven't used in this conversation has to read all of it without the cache, while your current model, until its cache expires, reads it at a fraction of its usual price. So once the cache is warm, `/nudgeist:sonnet` from Opus often costs more than staying, even early on, and `/nudgeist:haiku` stops paying in a long conversation. `/nudgeist:check` runs on Haiku too, so the same applies to it.
+
+`/nudgeist:low` and `/nudgeist:medium` keep your model. On the 5.5 models and Fable 5.1, with a Claude plan or an Anthropic Console account, they keep its cache too, which makes them the safer choice there. On other models, or through Bedrock, Google Cloud or a gateway, changing effort can mean reading everything again.
+
+## Install
+
+In Claude Code: run `/plugin directory` (v2.1.287 or later) and pick nudgeist. In the Claude desktop app: Customize → Plugins → Discover → nudgeist.
 
 ## What it reads, writes and sends
 
-- **Reads** the session transcript and the line counts of the files the session touched, on your machine.
-- **Writes** a small state file per session in the plugin's data folder: the model at start, a fingerprint (SHA-256 hash) of the message on hold, never its text, and how often you accepted or kept your model.
-- **Sends** your message and the session brief to Haiku through your own `claude` login. Nothing goes anywhere but Anthropic, where your message was going anyway. No telemetry.
-
-## When it stays out of the way
-
-- Commands (`/...`), `claude -p`, SDK and background sessions are never held.
-- Any error, timeout or unclear verdict lets the message through.
-- `NUDGEIST=off` turns it off.
+Nothing of its own. These commands are five short text files: no code, nothing in the background, and nothing runs until you type one. The message you put after a command goes through Claude Code to the model it names, or to your session's model for `/nudgeist:low` and `/nudgeist:medium`, like any other message, and counts toward your usage. See the [privacy policy](https://github.com/nudgeist/nudgeist/blob/main/PRIVACY.md).
 
 ## Limits
 
-- The advisor sees a summary, not your code, so it can be wrong. That's why it asks instead of switching.
-- In the desktop app the first message of a session isn't checked: Claude Code doesn't tell hooks the model there until the first turn.
-- Prices are list prices for the 5.5 models; older models are priced as their 5.5 family member, which only understates savings. On a subscription you pay a plan, not per token: the figures show relative usage.
+- `/nudgeist:check` sees your message and this conversation, and is told not to open anything, so it can be wrong. That's why it only suggests.
+- It isn't asked to weigh which model or effort your session uses, so it can suggest what you're already on. Ignore that. `/nudgeist:low` and `/nudgeist:medium` keep whatever model you're on.
+- Built for Claude Code, where a command can set its own model and effort. Elsewhere a command may run on the model you already have.
+
+## Troubleshooting
+
+- It ran on your usual model: Claude Code keeps your session's model for a command when your organization's allowed-models list excludes that model, or when auto mode doesn't support it, as can happen on cloud providers where `haiku` and `sonnet` mean older models.
+- The effort didn't change: an effort level set outside the session takes priority, and older models have no effort setting.
+- Command not found: use the full name, such as `/nudgeist:haiku`, and check that the plugin is on in `/plugin`.
+
+## Support
+
+Bugs and questions: [open an issue](https://github.com/nudgeist/nudgeist/issues). Security reports: [report privately](https://github.com/nudgeist/nudgeist/security/advisories/new).
+
+nudgeist is an independent project, not made or endorsed by Anthropic. Claude, Haiku, Sonnet and Opus are Anthropic's names, used here only to say which model a command runs on.
 
 ## License
 

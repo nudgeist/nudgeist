@@ -27,6 +27,8 @@ In Claude Code:
 
 It needs Node.js 18 or later: the hooks run with `node`.
 
+**Two editions.** This repository is the full edition, with the hooks that look at each message before it's sent. Anthropic's plugin directory accepts background hooks only from Verified organizations, so the edition submitted there carries only the five commands, with no hooks and no code. [Its README](https://github.com/nudgeist/nudgeist/tree/directory#readme) has the details.
+
 ## How it decides
 
 1. **What you're running.** It reads the model and effort of your last turn from the session transcript, and Claude Code tells it about `/model` as it happens. An `/effort` change counts once a turn has run on it. Before the first turn it uses the model the session started with.
